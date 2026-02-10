@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>A.R.C Character Archive</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet">
+
+</head>
+<body>
+  <header class="topbar">
+    <div class="title">
+      <h1>A.R.C Character Archive</h1>
+      <p>Offline character profiles → JSON + Print-to-PDF</p>
+    </div>
+
+    <div class="actions">
+      <label class="btn">
+        Load JSON
+        <input id="jsonFile" type="file" accept=".json" hidden />
+      </label>
+      <button id="saveJsonBtn" class="btn">Save JSON</button>
+      <button id="printBtn" class="btn primary">Export PDF</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="panel">
+      <h2>Profile Builder</h2>
+      <div id="formRoot"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Character Sheet Preview</h2>
+      <div id="previewRoot" class="sheet"></div>
+	  <canvas id="radarCanvas" width="800" height="520"></canvas>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
