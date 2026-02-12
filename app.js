@@ -502,6 +502,26 @@ const GRACED_MAP = {
   soul: new Set(["nature_energy","arts_potency"])
 };
 
+
+
+const FIGHTING_PHILOSOPHY_DB = {
+  "Brutal": "Wins through raw force and intimidation. Minimal restraint.",
+  "Tactical": "Plans ahead, exploits weaknesses, controls tempo.",
+  "Adaptive": "Reads patterns fast and changes approach mid-fight.",
+  "Defensive": "Prioritizes survival and protection. Counters over chasing.",
+  "Overwhelming": "Wins by pressure and output. Buries opponents in offense.",
+  "Surgical": "Precise, efficient, minimal wasted movement or energy.",
+  "Emotional": "Fights powered by feeling. Peaks high, can lose control.",
+  "Detached": "Cold, clinical. Doesn’t get baited or shaken.",
+  "Unpredictable": "Chaotic rhythm, irregular choices, hard to read.",
+  "Patient": "Waits for perfect openings. Lets enemies overcommit.",
+  "Honor-bound": "Follows rules or a code. Limits certain tactics.",
+  "Ruthless": "No rules. Uses any advantage, targets weaknesses instantly."
+};
+
+const FIGHTING_PHILOSOPHY_OPTIONS = Object.keys(FIGHTING_PHILOSOPHY_DB);
+
+
 function getGracedMultiplierForStat(statKey) {
   const body = Number(character.graced_body || 0);
   const mind = Number(character.graced_mind || 0);
@@ -785,6 +805,7 @@ const SCHEMA = [
    fields: [
   { key: "style", label: "Style", type: "select_style" },
   { key: "arts", label: "Arts (pick as many as needed)", type: "multiselect_arts" },
+  { key: "fighting_philosophy", label: "Fighting Philosophy", type: "checkbox_philosophy" },
   { key: "graced_body", label: "Graced Body", type: "select_graced" },
   { key: "graced_mind", label: "Graced Mind", type: "select_graced" },
   { key: "graced_soul", label: "Graced Soul", type: "select_graced" }
@@ -1162,6 +1183,47 @@ function renderForm() {
     renderPreview();
   });
 
+	}else if (f.type === "checkbox_philosophy") {
+
+  input = document.createElement("div");
+  input.className = "checkbox-grid";
+
+  if (!Array.isArray(character[f.key])) {
+    character[f.key] = [];
+  }
+
+  FIGHTING_PHILOSOPHY_OPTIONS.forEach(p => {
+    const label = document.createElement("label");
+    label.className = "checkbox-item";
+
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.value = p;
+    box.checked = character[f.key].includes(p);
+
+    box.addEventListener("change", () => {
+      if (box.checked) {
+        character[f.key].push(p);
+      } else {
+        character[f.key] = character[f.key].filter(x => x !== p);
+      }
+      renderPreview();
+    });
+
+    const text = document.createElement("span");
+    text.textContent = p;
+
+    label.appendChild(box);
+    label.appendChild(text);
+    input.appendChild(label);
+  });
+
+
+
+
+
+
+
 
 
       // 5) text input default
@@ -1227,7 +1289,6 @@ if (f.key === "brigade_rank" || f.key === "brigade_sector") {
 }
 
 
-
     if (f.key === "origin_country") {
       const city = character.origin_city || "";
       const region = character.origin_region || "";
@@ -1243,6 +1304,38 @@ if (f.key === "brigade_rank" || f.key === "brigade_sector") {
     }
 
     return `<div class="block"><b>${escapeHtml(f.label)}:</b> ${escapeHtml(character[f.key] ?? "")}</div>`;
+
+
+// Fighting Philosophy (with descriptions)
+  if (f.key === "fighting_philosophy") {
+    const picks = Array.isArray(character.fighting_philosophy)
+      ? character.fighting_philosophy
+      : [];
+
+    const lines = picks.map(p => {
+      const desc = FIGHTING_PHILOSOPHY_DB?.[p] || "";
+      return `• ${p}${desc ? ` — ${desc}` : ""}`;
+    }).join("\n");
+
+    const pretty = escapeHtml(lines).replace(/\n/g, "<br/>");
+
+    return `<div class="block"><b>Fighting Philosophy:</b><br/>${pretty}</div>`;
+  }
+
+  // Default printing
+  const val = character[f.key];
+
+  // Arrays (like arts/philosophy) print nicely
+  if (Array.isArray(val)) {
+    const joined = val.join(" • ");
+    return `<div class="block"><b>${escapeHtml(f.label)}:</b><br/>${escapeHtml(joined)}</div>`;
+  }
+
+  // Normal fields
+  const text = escapeHtml(val ?? "").replace(/\n/g, "<br/>");
+  return `<div class="block"><b>${escapeHtml(f.label)}:</b><br/>${text}</div>`;
+
+
 
   }).join("")}
 `).join("")}
@@ -1285,6 +1378,7 @@ function loadJsonFromFile(file) {
       character = parsed.data ?? parsed; // supports old raw JSON too
       renderForm();
       renderPreview();
+	  drawRadar();
     } catch (e) {
       alert("That JSON file couldn't be read. Make sure it's valid JSON.");
     }

@@ -311,3 +311,25 @@ body {
     background: transparent !important; /* because page now has parchment */
   }
 }
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  justify-items: start;
+}
+
+.checkbox-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+
+
+.checkbox-item input {
+  transform: scale(1.1);
+  accent-color: var(--style-accent);
+}
