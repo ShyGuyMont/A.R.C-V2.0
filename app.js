@@ -502,6 +502,65 @@ const GRACED_MAP = {
   soul: new Set(["nature_energy","arts_potency"])
 };
 
+const ETHNICITY_OPTIONS = [
+  "African / African Diaspora (Black heritage — e.g., African-American, Caribbean, Nigerian, Ethiopian)",
+  "Arab / Middle Eastern (e.g., Saudi, Lebanese, Emirati, Syrian)",
+  "Central Asian (Inner Asia — e.g., Kazakh, Uzbek, Kyrgyz, Turkmen)",
+  "East Asian (e.g., Chinese, Japanese, Korean, Mongolian)",
+  "Hispanic / Latino (Spanish-speaking heritage — e.g., Mexican, Puerto Rican, Colombian)",
+  "Indigenous / Native (Original peoples of a region — e.g., Native American, First Nations, Ainu)",
+  "North African (e.g., Egyptian, Moroccan, Algerian, Berber)",
+  "Pacific Islander (Oceanic cultures — e.g., Samoan, Hawaiian, Tongan, Fijian)",
+  "South Asian (Indian subcontinent — e.g., Indian, Pakistani, Bangladeshi, Sri Lankan)",
+  "Southeast Asian (e.g., Filipino, Vietnamese, Thai, Indonesian, Malaysian)",
+  "White / European (e.g., German, French, Italian, Slavic, Nordic)",
+  "Mixed Heritage",
+  "Other (write-in)"
+];
+
+const PERSONALITY_OPTIONS = [
+  "Calm",
+  "Stoic",
+  "Compassionate",
+  "Protective",
+  "Loyal",
+  "Honorable",
+  "Driven",
+  "Ambitious",
+  "Strategic",
+  "Analytical",
+  "Curious",
+  "Idealistic",
+  "Humble",
+  "Disciplined",
+  "Reckless",
+  "Hot-headed",
+  "Arrogant",
+  "Sarcastic",
+  "Playful",
+  "Reserved",
+  "Emotionally Guarded",
+  "Vengeful",
+  "Haunted",
+  "Charismatic",
+  "Manipulative",
+  "Unpredictable"
+];
+
+const COMBAT_ROLE_DB = {
+  "Vanguard": "Frontline pressure. Starts fights, breaks formations, draws heat.",
+  "Duelist": "Wins 1v1s. Handles elite targets and rival matchups.",
+  "Assassin": "Deletes priority targets. Mobility, stealth, burst, escape.",
+  "Controller": "Shapes the battlefield. Zones, disables, traps, denial.",
+  "Artillery": "Long-range output. Big AoE, suppression, siege pressure.",
+  "Support": "Enables allies. Buffs, utility, positioning, protection.",
+  "Healer": "Sustain and recovery. Keeps the team alive through attrition.",
+  "Tank": "Soaks damage and anchors space. Protects allies, holds ground.",
+  "Scout / Recon": "Intel and positioning. Tracks threats, maps routes, warns team.",
+  "Specialist": "Weird niche value. Counters specific threats or solves unique problems."
+};
+
+const COMBAT_ROLE_OPTIONS = Object.keys(COMBAT_ROLE_DB);
 
 
 const FIGHTING_PHILOSOPHY_DB = {
@@ -740,17 +799,20 @@ const SCHEMA = [
 	  { key: "status", label: "Status", type: "select", options: ["Alive", "Deceased", "Sealed", "Missing", "Unknown"] },
       { key: "role", label: "Role in the Story", type: "text" },
 	  { key: "era", label: "Era / Timeline", type: "text" },
-      { key: "ethnicity", label: "Ethnicity", type: "text" },
+      { key: "ethnicity", label: "Ethnicity", type: "select", options: ETHNICITY_OPTIONS },
+      { key: "ethnicity_other", label: "If Other, specify", type: "text" },
+
       { key: "origin_country", label: "Birthplace (Country)", type: "select_country" },
       { key: "origin_region",  label: "Birthplace (Region/State)", type: "select_region" },
       { key: "origin_city",    label: "Birthplace (City)", type: "select_city" },
       { key: "hair", label: "Hair", type: "text" },
       { key: "eyes", label: "Eyes", type: "text" },
-      { key: "height", label: "Height", type: "text" },
+	  { key: "height_ft", label: "Height (Feet)", type: "select", options: ["3","4","5","6","7","8"] },
+      { key: "height_in", label: "Height (Inches)", type: "select", options: ["0","1","2","3","4","5","6","7","8","9","10","11"] },
 	  { key: "build", label: "Build / Physique", type: "text" },
       { key: "weapon", label: "Weapon", type: "text" },
-      { key: "personality_positive", label: "Personality Traits (Positive)", type: "textarea" },
-      { key: "personality_negative", label: "Personality Traits (Negative)", type: "textarea" },
+      { key: "personality_traits", label: "Personality Traits", type: "multiselect", options: PERSONALITY_OPTIONS },
+      { key: "personality_notes", label: "Additional Personality Notes (optional)", type: "textarea" },
     ],
   },
   {
@@ -805,6 +867,7 @@ const SCHEMA = [
    fields: [
   { key: "style", label: "Style", type: "select_style" },
   { key: "arts", label: "Arts (pick as many as needed)", type: "multiselect_arts" },
+  { key: "combat_role", label: "Combat Role", type: "select", options: COMBAT_ROLE_OPTIONS },
   { key: "fighting_philosophy", label: "Fighting Philosophy", type: "checkbox_philosophy" },
   { key: "graced_body", label: "Graced Body", type: "select_graced" },
   { key: "graced_mind", label: "Graced Mind", type: "select_graced" },
@@ -1219,8 +1282,34 @@ function renderForm() {
   });
 
 
+	} else if (f.type === "multiselect") {
+  input = document.createElement("div");
+  input.className = "checkbox-group";
 
+  if (!Array.isArray(character[f.key])) character[f.key] = [];
 
+  f.options.forEach(opt => {
+    const label = document.createElement("label");
+    label.className = "checkbox-item";
+
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.value = opt;
+    box.checked = character[f.key].includes(opt);
+
+    box.addEventListener("change", () => {
+      if (box.checked) {
+        character[f.key].push(opt);
+      } else {
+        character[f.key] = character[f.key].filter(v => v !== opt);
+      }
+      renderPreview();
+    });
+
+    label.appendChild(box);
+    label.appendChild(document.createTextNode(opt));
+    input.appendChild(label);
+  });
 
 
 
@@ -1267,6 +1356,50 @@ ${SCHEMA.map((section, idx) => `
 
 
   ${section.fields.map(f => {
+	
+// ETHNICITY (pretty print + hide other field)
+if (f.key === "ethnicity") {
+  const val = character.ethnicity || "";
+  const other = (character.ethnicity_other || "").trim();
+
+  const finalText = (val === "Other (write-in)" && other) ? other : val;
+
+  return `<div class="block"><b>Ethnicity:</b><br/>${escapeHtml(finalText)}</div>`;
+}
+
+if (f.key === "ethnicity_other") {
+  return ""; // hide in export; printed via ethnicity line
+}
+	
+
+  // Default printing
+  const val = character[f.key];
+  
+	  // HEIGHT COMBINE LOGIC
+if (f.key === "height_ft") {
+  const ft = character.height_ft || "";
+  const inch = character.height_in || "0";
+  if (!ft) return "";
+
+  const totalInches = (parseInt(ft, 10) * 12) + parseInt(inch, 10);
+  const cm = Math.round(totalInches * 2.54);
+
+  return `<div class="block"><b>Height:</b><br/>${escapeHtml(`${ft}'${inch}" (${cm} cm)`)}</div>`;
+}
+
+// Skip inches because height_ft prints both
+if (f.key === "height_in") {
+  return "";
+}
+
+if (f.key === "combat_role") {
+  const role = character.combat_role || "";
+  const desc = COMBAT_ROLE_DB[role] || "";
+  const line = role ? `${role}${desc ? ` — ${desc}` : ""}` : "";
+  return `<div class="block"><b>Combat Role:</b><br/>${escapeHtml(line)}</div>`;
+}
+
+
 
 // ===============================
 // FACTION / BRIGADE SMART PRINT
@@ -1322,8 +1455,6 @@ if (f.key === "brigade_rank" || f.key === "brigade_sector") {
     return `<div class="block"><b>Fighting Philosophy:</b><br/>${pretty}</div>`;
   }
 
-  // Default printing
-  const val = character[f.key];
 
   // Arrays (like arts/philosophy) print nicely
   if (Array.isArray(val)) {
